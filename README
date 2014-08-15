@@ -1,9 +1,17 @@
 BioUtil
 
-BioUtil - My Bioinformatics Utilities!
-https://github.com/shenwei356/BioUtil
+BioUtil - Bioinformatics Utilities!
 
-Please check the submodules.
+https://github.com/shenwei356/BioUtil
+http://search.cpan.org/dist/BioUtil/
+
+Some great modules like BioPerl provide many robust solutions. 
+However, it is not easy to install for someone in some platforms.
+And for some simple task scripts, a lite module may be a good choice.
+So I reinvented some wheels and added some useful utilities into this module,
+hoping it would be helpful.
+
+Please check the docments of submodules.
 
 
 INSTALLATION

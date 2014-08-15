@@ -6,17 +6,23 @@ use warnings FATAL => 'all';
 
 =head1 NAME
 
-BioUtil - My Bioinformatics Utilities!
+BioUtil - Bioinformatics Utilities!
+
+Some great modules like BioPerl provide many robust solutions. 
+However, it is not easy to install for someone in some platforms.
+And for some simple task scripts, a lite module may be a good choice.
+So I reinvented some wheels and added some useful utilities into this module,
+hoping it would be helpful.
 
 Please check the submodules.
 
 =head1 VERSION
 
-Version 2014.0814
+Version 2014.0815
 
 =cut
 
-our $VERSION = 2014.0814;
+our $VERSION = 2014.0815;
 
 
 =head1 AUTHOR
