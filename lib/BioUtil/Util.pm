@@ -21,6 +21,7 @@ use 5.010_000;
 use strict;
 use warnings FATAL => 'all';
 
+use Encode qw/ encode_utf8 /;
 use File::Path qw(make_path remove_tree);
 use File::Find;
 use File::Basename;
@@ -291,7 +292,7 @@ Example:
 
 sub read_json_file {
     my ($file) = @_;
-    open IN, "<", $file
+    open IN, "<:encoding(utf8)", $file
         or die "fail to open json file: $file\n";
     my $text;
     while (<IN>) {
@@ -318,7 +319,8 @@ sub write_json_file {
     my ( $hash, $file ) = @_;
     my $json = JSON->new->allow_nonref;
     my $text = $json->pretty->encode($hash);
-    open OUT, ">", $file
+    $text = encode_utf8( $text );
+    open OUT, ">:encoding(utf8)", $file
         or die "fail to open json file: $file\n";
     print OUT $text;
     close OUT;

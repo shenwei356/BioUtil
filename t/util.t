@@ -1,5 +1,4 @@
 #!/usr/bin/env perl
-
 use Test::Simple tests => 6;
 
 use strict;
@@ -46,9 +45,12 @@ ok( @$list == 3 );
 
 # =========================================================
 
-my $hashref = { "a" => 1, "b" => 2 };
+my $hashref = { "a" => 1, "b" => 2, "han" => "汉字" };
 my $file = "t/test.json";
 write_json_file( $hashref, $file );
 my $hash = read_json_file($file);
-ok ($$hash{"a"} == 1 && $$hash{"b"} == 2);
+ok ($$hash{"a"} == 1 && $$hash{"b"} == 2 );
+# ok ($$hash{"han"} eq "汉字" );
 
+#  binmode(STDOUT, ":utf8");
+# print $$hash{"han"},"\n";
