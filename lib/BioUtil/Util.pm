@@ -104,7 +104,7 @@ sub get_file_list {
         warn "depth should be positive integer\n";
         return [];
     }
-    print "$dir\n";
+    # print "$dir\n";
     my $depth0 = $dir =~ tr/\//\//;
 
     my $files  = [];
