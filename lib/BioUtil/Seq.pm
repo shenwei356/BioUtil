@@ -295,7 +295,7 @@ sub dna2peptide {
     return $protein;
 }
 
-=head2 dna2peptide
+=head2 codon2aa
 
 Translate a DNA 3-character codon to an amino acid
 

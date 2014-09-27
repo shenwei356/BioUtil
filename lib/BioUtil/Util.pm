@@ -1,5 +1,7 @@
 package BioUtil::Util;
 
+use File::Path qw/remove_tree/;
+
 require Exporter;
 @ISA    = (Exporter);
 @EXPORT = qw(
@@ -13,6 +15,13 @@ require Exporter;
 
     read_json_file
     write_json_file
+
+    run
+
+    check_positive_integer
+
+    check_in_out_dir 
+    rm_and_mkdir
 );
 
 use vars qw($VERSION);
@@ -39,16 +48,16 @@ hoping it would be helpful.
 
 =head1 VERSION
 
-Version 2014.0815
+Version 2014.0927
 
 =cut
 
-our $VERSION = 2014.0815;
+our $VERSION = 2014.0927;
 
 =head1 EXPORT
 
     get_file_list
-    
+
     extract_parameters_from_string
     get_parameters_from_file
 
@@ -57,6 +66,13 @@ our $VERSION = 2014.0815;
 
     read_json_file
     write_json_file
+
+    run
+
+    check_positive_integer
+
+    check_in_out_dir 
+    rm_and_mkdir
 
 =head1 SYNOPSIS
 
@@ -324,6 +340,95 @@ sub write_json_file {
         or die "fail to open json file: $file\n";
     print OUT $text;
     close OUT;
+}
+
+=head2 run
+
+Run a command
+
+Example:
+    
+    run('date');
+
+=cut
+
+sub run {
+    my ($cmd) = @_;
+    system($cmd);
+
+    if ( $? == -1 ) {
+        die "[ERROR] fail to run: $cmd. Command ("
+            . ( split /\s+/, $cmd )[0]
+            . ") not found\n";
+    }
+    elsif ( $? & 127 ) {
+        printf "[ERROR] command died with signal %d, %s coredump\n",
+            ( $? & 127 ), ( $? & 128 ) ? 'with' : 'without';
+    }
+    else {
+        # 0, ok
+    }
+}
+
+=head2 run
+
+Check Positive Integer
+
+Example:
+    
+    rcheck_positive_integer(1);
+
+=cut
+
+sub check_positive_integer {
+    my ($n) = @_;
+    die "positive integer needed ($n given)"
+        unless $n =~ /^\d+$/ and $n != 0;
+}
+
+
+=head2 check_in_out_dir
+
+    Check in and out directory.
+
+Example:
+    
+    check_in_out_dir("~/dir", "~/dir.out");
+
+=cut
+
+sub check_in_out_dir {
+    my ( $in, $out ) = @_;
+    die "dir $in not found."
+        unless -e $in;
+
+    die "$in is not a directory.\n"
+        unless -d $in;
+
+    $in =~ s/\/$//;
+    $out =~ s/\/$//;
+    die "out dir shoud be different from in dir!\n"
+        if $in eq $out;
+}
+
+
+=head2 rm_and_mkdir
+
+    Make a directory, remove it firstly if it exists.
+
+Example:
+    
+    rm_and_mkdir("out")
+
+=cut
+
+
+sub rm_and_mkdir {
+    my ($dir) = @_;
+    if ( -e $dir ) {
+        remove_tree($dir) or die "fail to remove: $dir\n";
+    }
+    mkdir $dir or die "fail to mkdir: $dir\n";
 }
 
 1;
