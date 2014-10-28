@@ -102,7 +102,8 @@ sub FastaReader {
     my ( $header,      $seq )        = ( '', '' ); # current header and seq
     my $finished = 0;
 
-    open FH, "<", $file
+    # must use local variable!
+    open my $fh, "<", $file
         or die "fail to open file: $file!\n";
 
     return sub {
@@ -111,7 +112,7 @@ sub FastaReader {
             return undef;
         }
 
-        while (<FH>) {
+        while (<$fh>) {
             s/^\s+//;    # remove the space at the front of line
 
             if (/^>(.*)/) {    # header line
@@ -128,7 +129,7 @@ sub FastaReader {
                 $seq_buffer .= $_;    # append seq
             }
         }
-        close FH;
+        close $fh;
         $finished = 1;
 
         # last record
