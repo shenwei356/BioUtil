@@ -272,11 +272,12 @@ Example:
 =cut
 
 sub get_column_data {
-    my ( $file, $column ) = @_;
+    my ( $file, $column, $delimiter ) = @_;
     unless ( $column =~ /^(\d+)$/ and $column > 0 ) {
         warn "column number ($column) should be positive integer\n";
         $column = 1;
     }
+    $delimiter = "\t" unless defined $delimiter;
 
     open IN, "<", $file or die "failed to open file: $file\n";
     my @linedata = ();
@@ -284,13 +285,14 @@ sub get_column_data {
     my $n        = 0;
     while (<IN>) {
         s/\r?\n//;
-        @linedata = split /\t/, $_;
+        next if /^\s*#/;
+        @linedata = split /$delimiter/, $_;
         $n = scalar @linedata;
         next unless $n > 0;
 
         if ( $column > $n ) {
             die
-                "number of columns of this line ($n) is less than given column number ($column)\n";
+                "number of columns of this line ($n) is less than given column number ($column)\n$_";
         }
 
         push @data, $linedata[ $column - 1 ];
