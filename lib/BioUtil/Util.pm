@@ -19,7 +19,8 @@ require Exporter;
     run
 
     check_positive_integer
-
+    
+    check_all_files_exist
     check_in_out_dir 
     rm_and_mkdir
 );
@@ -70,7 +71,8 @@ our $VERSION = 2014.0927;
     run
 
     check_positive_integer
-
+    
+    check_all_files_exist
     check_in_out_dir 
     rm_and_mkdir
 
@@ -386,6 +388,20 @@ sub check_positive_integer {
         unless $n =~ /^\d+$/ and $n != 0;
 }
 
+=head2 check_all_files_exist
+
+    Check whether all files existed.
+
+=cut
+sub check_all_files_exist {
+    my $flag = 1;
+    for (@_) {
+        if ( not -e $_) {
+            return 0;
+        }
+    }
+    return 1;
+}
 
 =head2 check_in_out_dir
 
