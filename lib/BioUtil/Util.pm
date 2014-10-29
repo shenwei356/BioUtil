@@ -20,6 +20,7 @@ require Exporter;
 
     check_positive_integer
     
+    filename_prefix
     check_all_files_exist
     check_in_out_dir 
     rm_and_mkdir
@@ -72,6 +73,7 @@ our $VERSION = 2014.0927;
 
     check_positive_integer
     
+    filename_prefix
     check_all_files_exist
     check_in_out_dir 
     rm_and_mkdir
@@ -372,7 +374,7 @@ sub run {
     }
 }
 
-=head2 run
+=head2 check_positive_integer
 
 Check Positive Integer
 
@@ -387,6 +389,27 @@ sub check_positive_integer {
     die "positive integer needed ($n given)"
         unless $n =~ /^\d+$/ and $n != 0;
 }
+
+=head2 check_positive_integer
+
+Get filename prefix
+
+Example:
+    
+    filename_prefix("test.fa"); # "test"
+    filename_prefix("tmp");     # "tmp"
+
+=cut
+sub filename_prefix {
+    my ($file) = @_;
+    if ( $file =~ /(.+)\..+?$/ ) {
+        return $1;
+    }
+    else {
+        return $file;
+    }
+}
+
 
 =head2 check_all_files_exist
 
