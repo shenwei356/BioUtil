@@ -4,20 +4,22 @@ require Exporter;
 @ISA    = (Exporter);
 @EXPORT = qw(
     FastaReader
-    read_sequence_from_fasta_file
-    write_sequence_to_fasta_file
+    read_sequence_from_fasta_file 
+    write_sequence_to_fasta_file 
     format_seq
 
-    validate_sequence
-    revcom
-    base_content
-    dna2peptide
-    codon2aa
+    validate_sequence 
+    revcom 
+    base_content 
+    degenerate_seq_to_regexp
+    degenerate_seq_match_sites
+    dna2peptide 
+    codon2aa 
     generate_random_seqence
 
-    shuffle_sequences
-    rename_fasta_header
-    clean_fasta_header
+    shuffle_sequences 
+    rename_fasta_header 
+    clean_fasta_header 
 );
 
 use vars qw($VERSION);
@@ -56,6 +58,8 @@ our $VERSION = 2014.0814;
     validate_sequence 
     revcom 
     base_content 
+    degenerate_seq_to_regexp
+    degenerate_seq_match_sites
     dna2peptide 
     codon2aa 
     generate_random_seqence
@@ -277,6 +281,56 @@ sub base_content {
     my $sum = 0;
     $sum += $seq =~ s/$_/$_/ig for split "", $bases;
     return sprintf "%.4f", $sum / length $seq;
+}
+
+=head2 degenerate_seq_to_regexp
+
+Translate degenerate sequence to regular expression
+
+=cut
+sub degenerate_seq_to_regexp {
+    my ($seq) = @_;
+    my %bases = (
+        'A' => 'A',
+        'T' => 'T',
+        'C' => 'C',
+        'G' => 'G',
+        'R' => '[AG]',
+        'Y' => '[CT]',
+        'M' => '[AC]',
+        'K' => '[GT]',
+        'S' => '[CG]',
+        'W' => '[AT]',
+        'H' => '[ACT]',
+        'B' => '[CGT]',
+        'V' => '[ACG]',
+        'D' => '[AGT]',
+        'N' => '[ACGT]',
+    );
+    return join '', map { $bases{$_} } split '', $seq;
+}
+
+=head2 degenerate_seq_match_sites
+
+Find all sites matching degenerat subseq
+
+=cut
+sub degenerate_seq_match_sites {
+    my ( $r, $s ) = @_;
+
+    # original regexp length
+    my $r2 = $r;
+    $r2 =~ s/\[[^\[\]]+?\]/_/g;
+    my $len = length $r2;
+
+    my @sites = ();
+    my $pos   = -1;
+    while ( $s =~ /$r/ig ) {
+        $pos = pos $s;
+        push @sites, [ $pos - $len, $pos - 1 ];
+        pos $s = $pos + 1;
+    }
+    return \@sites;
 }
 
 =head2 dna2peptide
