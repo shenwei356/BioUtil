@@ -1,5 +1,7 @@
 package BioUtil::Misc;
 
+use BioUtil::Seq;
+
 require Exporter;
 @ISA    = (Exporter);
 @EXPORT = qw(
@@ -11,8 +13,6 @@ use vars qw($VERSION);
 use 5.010_000;
 use strict;
 use warnings FATAL => 'all';
-
-
 
 =head1 NAME
 
@@ -76,8 +76,10 @@ sub parse_embossre {
                     /x;
         $enz = $1;
         $enz .= '*' while defined $$enzs{$enz};
-        $$enzs{$enz}{name}        = $1;
-        $$enzs{$enz}{pattern}     = $2;
+        $$enzs{$enz}{name}    = $1;
+        $$enzs{$enz}{pattern} = uc $2;
+        $$enzs{$enz}{pattern_regexp}
+            = degenerate_seq_to_regexp( $$enzs{$enz}{pattern} );
         $$enzs{$enz}{length}      = $3;
         $$enzs{$enz}{cuts_number} = $4;
         $$enzs{$enz}{is_blunt}    = $5;

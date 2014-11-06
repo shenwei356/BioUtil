@@ -293,6 +293,7 @@ sub degenerate_seq_to_regexp {
     my %bases = (
         'A' => 'A',
         'T' => 'T',
+        'U' => 'U',
         'C' => 'C',
         'G' => 'G',
         'R' => '[AG]',
@@ -307,7 +308,7 @@ sub degenerate_seq_to_regexp {
         'D' => '[AGT]',
         'N' => '[ACGT]',
     );
-    return join '', map { $bases{$_} } split '', $seq;
+    return join '', map { $bases{$_} } split // , $seq;
 }
 
 =head2 degenerate_seq_match_sites
