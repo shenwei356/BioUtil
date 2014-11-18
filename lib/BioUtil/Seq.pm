@@ -42,11 +42,11 @@ hoping it would be helpful.
 
 =head1 VERSION
 
-Version 2014.1115
+Version 2014.1116
 
 =cut
 
-our $VERSION = 2014.1115;
+our $VERSION = 2014.1116;
 
 =head1 EXPORT
 
@@ -80,18 +80,24 @@ our $VERSION = 2014.1115;
 
 FastaReader is a fasta file parser using closure.
 FastaReader returns an anonymous subroutine, when called, it
-will return a fasta record which is reference of an array
+return a fasta record which is reference of an array
 containing fasta header and sequence.
+
+FastaReader could also read from STDIN when the file name is "STDIN".
 
 A boolean argument is optional. If set as "true", "return" ("\r") and
 "new line" ("\n") symbols in sequence will not be trimed.
 
 Example:
 
+   # do not trim the spaces and \n
    # $not_trim = 1;
    # my $next_seq = FastaReader("test.fa", $not_trim);
    
+   # read from STDIN
    # my $next_seq = FastaReader('STDIN');
+   
+   # read from file
    my $next_seq = FastaReader("test.fa");
 
    while ( my $fa = &$next_seq() ) {
@@ -112,7 +118,7 @@ sub FastaReader {
     my $fh       = undef;
     my $is_stdin = 0;
 
-    if ( $file eq 'STDIN' ) {
+    if ( $file =~ /^STDIN$/i ) {
         $fh       = *STDIN;
         $is_stdin = 1;
     }
