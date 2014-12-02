@@ -9,7 +9,8 @@ require Exporter;
     format_seq
 
     validate_sequence 
-    revcom 
+    complement
+    revcom
     base_content 
     degenerate_seq_to_regexp
     degenerate_seq_match_sites
@@ -42,11 +43,11 @@ hoping it would be helpful.
 
 =head1 VERSION
 
-Version 2014.1116
+Version 2014.1202
 
 =cut
 
-our $VERSION = 2014.1116;
+our $VERSION = 2014.1202;
 
 =head1 EXPORT
 
@@ -56,6 +57,7 @@ our $VERSION = 2014.1116;
     format_seq
 
     validate_sequence 
+    complement
     revcom 
     base_content 
     degenerate_seq_to_regexp
@@ -266,6 +268,20 @@ sub validate_sequence {
     return 1;
 }
 
+=head2 complement
+
+Complement sequence
+
+my $comp = complement($seq);
+
+=cut
+
+sub complement {
+    $_[0] =~ tr/ACGTURYMKSWBDHVNacgturymkswbdhvn/TGCAAYRKMWSVHDBNtgcaayrkmwsvhdbn/;
+    return $_[0];
+}
+
+
 =head2 revcom
 
 Reverse complement sequence
@@ -275,9 +291,7 @@ my $recom = revcom($seq);
 =cut
 
 sub revcom {
-    my ($s) = @_;
-    $s =~ tr/ACGTRYMKSWBDHVNacgtrymkswbdhvn/TGCAYRKMWSVHDBNtgcayrkmwsvhdbn/;
-    return reverse $s;
+    return reverse complement($_[0]);
 }
 
 =head2 base_content
