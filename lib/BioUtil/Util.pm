@@ -5,6 +5,7 @@ use File::Path qw/remove_tree/;
 require Exporter;
 @ISA    = (Exporter);
 @EXPORT = qw(
+    file_list_from_argv
     get_file_list
 
     extract_parameters_from_string
@@ -57,7 +58,8 @@ Version 2014.1115
 our $VERSION = 2014.1115;
 
 =head1 EXPORT
-
+    
+    file_list_from_argv
     get_file_list
 
     extract_parameters_from_string
@@ -84,6 +86,29 @@ our $VERSION = 2014.1115;
 
 
 =head1 SUBROUTINES/METHODS
+
+=head2 file_list_from_argv
+
+Get file list from @ARGV. You should use this after parsing options!
+
+When no arguments given, 'STDIN' will be added to 
+the list, which could be further used by, e.g. FastaReader.
+
+=cut
+
+sub file_list_from_argv {
+    my @files = ();
+    for my $file (@_) {
+        for my $f ( glob $file ) {
+            push @files, $f;
+        }
+    }
+    if ( @files == 0 ) {
+        push @files, 'STDIN';
+    }
+    return @files;
+} 
+
 
 =head2 get_file_list
 
