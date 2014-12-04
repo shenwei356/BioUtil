@@ -8,6 +8,9 @@ require Exporter;
     file_list_from_argv
     get_file_list
 
+    delete_string_elements_by_indexes
+    delete_array_elements_by_indexes
+
     extract_parameters_from_string
     get_parameters_from_file
 
@@ -61,6 +64,9 @@ our $VERSION = 2014.1115;
     
     file_list_from_argv
     get_file_list
+
+    delete_string_elements_by_indexes
+    delete_array_elements_by_indexes
 
     extract_parameters_from_string
     get_parameters_from_file
@@ -168,6 +174,50 @@ sub get_file_list {
     find( $wanted, ($dir) );
 
     return $files;
+}
+
+=head2 delete_string_elements_by_indexes
+
+Delete string elements by indexes, it uses delete_array_elements_by_indexes
+
+=cut
+
+sub delete_string_elements_by_indexes {
+    my ( $str, $ids ) = @_;
+    my $t = '';
+    unless (ref $str eq ref \$t and ref $ids eq ref []){
+        die "both arguments should be array reference\n";
+    }
+    my @bytes = split //, $$str;
+    return join "",
+        @{ delete_array_elements_by_indexes( \@bytes, $ids ) };
+}
+
+=head2 delete_array_elements_by_indexes
+
+Delete array elements by given indexes.
+
+Example:
+
+    @list = qw(a b c d e f);
+    @idx = (1, 2, 4);
+    $list2 = delete_array_elements_by_indexes(\@list, \@idx);
+    print "@$list2\n"; # result: a, d, f
+
+=cut
+
+sub delete_array_elements_by_indexes {
+    my ( $array, $ids ) = @_;
+    unless (ref $array eq ref [] and ref $ids eq ref []){
+        die "both arguments should be array reference\n";
+    }
+    my %omitted = map { $_ => 1 } @$ids;
+    my @newarray = ();
+    for my $i ( 0 .. ( scalar(@$array) - 1 ) ) {
+        next if exists $omitted{$i};
+        push @newarray, $$array[$i];
+    }
+    return \@newarray;
 }
 
 =head2 extract_parameters_from_string

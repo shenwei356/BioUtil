@@ -277,7 +277,7 @@ my $comp = complement($seq);
 =cut
 
 sub complement {
-    my ($s) = (@_);
+    my ($s) = @_;
     $s =~ tr/ACGTURYMKSWBDHVNacgturymkswbdhvn/TGCAAYRKMWSVHDBNtgcaayrkmwsvhdbn/;
     return $s;
 }
