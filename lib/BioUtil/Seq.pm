@@ -43,11 +43,11 @@ hoping it would be helpful.
 
 =head1 VERSION
 
-Version 2014.1202
+Version 2014.1213
 
 =cut
 
-our $VERSION = 2014.1202;
+our $VERSION = 2014.1213;
 
 =head1 EXPORT
 
@@ -272,13 +272,39 @@ sub validate_sequence {
 
 Complement sequence
 
+IUPAC nucleotide code: ACGTURYSWKMBDHVN
+
+http://droog.gs.washington.edu/parc/images/iupac.html
+
+    code    base    Complement
+    A   A   T
+    C   C   G
+    G   G   C
+    T/U T   A
+
+    R   A/G Y
+    Y   C/T R
+    S   C/G S
+    W   A/T W
+    K   G/T M
+    M   A/C K
+
+    B   C/G/T   V
+    D   A/G/T   H
+    H   A/C/T   D
+    V   A/C/G   B
+
+    X/N A/C/G/T X
+    .   not A/C/G/T
+     or-    gap
+
 my $comp = complement($seq);
 
 =cut
 
 sub complement {
     my ($s) = @_;
-    $s =~ tr/ACGTURYMKSWBDHVNacgturymkswbdhvn/TGCAAYRKMWSVHDBNtgcaayrkmwsvhdbn/;
+    $s =~ tr/ACGTURYMKSWBDHVNacgturymkswbdhvn/TGCAAYRKMSWVHDBNtgcaayrkmswvhdbn/;
     return $s;
 }
 
