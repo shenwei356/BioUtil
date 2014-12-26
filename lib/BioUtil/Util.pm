@@ -5,6 +5,8 @@ use File::Path qw/remove_tree/;
 require Exporter;
 @ISA    = (Exporter);
 @EXPORT = qw(
+    getopt
+
     file_list_from_argv
     get_file_list
 
@@ -21,12 +23,13 @@ require Exporter;
     write_json_file
 
     run
+    ReadableSeconds
 
     check_positive_integer
-    
+
     filename_prefix
     check_all_files_exist
-    check_in_out_dir 
+    check_in_out_dir
     rm_and_mkdir
 );
 
@@ -54,14 +57,15 @@ hoping it would be helpful.
 
 =head1 VERSION
 
-Version 2014.1115
+Version 2014.1226
 
 =cut
 
-our $VERSION = 2014.1115;
+our $VERSION = 2014.1226;
 
 =head1 EXPORT
-    
+    getopt
+
     file_list_from_argv
     get_file_list
 
@@ -78,6 +82,7 @@ our $VERSION = 2014.1115;
     write_json_file
 
     run
+    ReadableSeconds
 
     check_positive_integer
     
@@ -92,6 +97,49 @@ our $VERSION = 2014.1115;
 
 
 =head1 SUBROUTINES/METHODS
+
+=head2 getopt
+
+getopt FOR ME
+
+Example
+    -a b -c t tt -d bb -dbtype asdfafd -test
+    
+    -a: b
+    -c: ARRAY(0xee25e8)
+    -d: bb
+    -dbtype: asdfafd
+    -infmt: fasta
+    -test: 1
+
+=cut
+
+sub getopt {
+    my ( $opts, $list ) = @_;
+    return "\$opts should be ref of hash, and \$list should be ref of list\n"
+        unless ref $opts eq ref {}
+        and ref $list eq ref [];
+    my ( $o, $opt ) = (undef) x 2;
+    while (@$list) {
+        $o = shift @$list;
+        if ( $o =~ /^\-/ ) {
+            $opt = $o;
+            $$opts{$opt} = 'http:shenwei.me' unless exists $$opts{$opt};
+        }
+        else {
+            if ( $$opts{$opt} ne 'http:shenwei.me' ) {
+                $$opts{$opt} = [ $$opts{$opt} ]
+                    if ref $$opts{$opt} ne ref [];
+                push @{ $$opts{$opt} }, $o;
+            }
+            else {
+                $$opts{$opt} = $o;
+            }
+        }
+    }
+    for ( keys %$opts ) { $$opts{$_} = 1 if $$opts{$_} eq 'http:shenwei.me'; }
+    return $opts;
+}
 
 =head2 file_list_from_argv
 
@@ -113,8 +161,7 @@ sub file_list_from_argv {
         push @files, 'STDIN';
     }
     return @files;
-} 
-
+}
 
 =head2 get_file_list
 
@@ -155,6 +202,7 @@ sub get_file_list {
         warn "depth should be positive integer\n";
         return [];
     }
+
     # print "$dir\n";
     my $depth0 = $dir =~ tr/\//\//;
 
@@ -185,12 +233,11 @@ Delete string elements by indexes, it uses delete_array_elements_by_indexes
 sub delete_string_elements_by_indexes {
     my ( $str, $ids ) = @_;
     my $t = '';
-    unless (ref $str eq ref \$t and ref $ids eq ref []){
+    unless ( ref $str eq ref \$t and ref $ids eq ref [] ) {
         die "both arguments should be array reference\n";
     }
     my @bytes = split //, $$str;
-    return join "",
-        @{ delete_array_elements_by_indexes( \@bytes, $ids ) };
+    return join "", @{ delete_array_elements_by_indexes( \@bytes, $ids ) };
 }
 
 =head2 delete_array_elements_by_indexes
@@ -208,7 +255,7 @@ Example:
 
 sub delete_array_elements_by_indexes {
     my ( $array, $ids ) = @_;
-    unless (ref $array eq ref [] and ref $ids eq ref []){
+    unless ( ref $array eq ref [] and ref $ids eq ref [] ) {
         die "both arguments should be array reference\n";
     }
     my %omitted = map { $_ => 1 } @$ids;
@@ -416,7 +463,7 @@ sub write_json_file {
     my ( $hash, $file ) = @_;
     my $json = JSON->new->allow_nonref;
     my $text = $json->pretty->encode($hash);
-    $text = encode_utf8( $text );
+    $text = encode_utf8($text);
     open OUT, ">:encoding(utf8)", $file
         or die "fail to open json file: $file\n";
     print OUT $text;
@@ -429,7 +476,8 @@ Run a command
 
 Example:
     
-    run('date');
+    my $fail = run($cmd);
+    die "failed to run:$cmd\n" if $fail;
 
 =cut
 
@@ -443,12 +491,57 @@ sub run {
             . ") not found\n";
     }
     elsif ( $? & 127 ) {
-        printf "[ERROR] command died with signal %d, %s coredump\n",
+        printf STDERR "[ERROR] command died with signal %d, %s coredump\n",
             ( $? & 127 ), ( $? & 128 ) ? 'with' : 'without';
     }
     else {
         # 0, ok
     }
+    return $?;
+}
+
+=head2 ReadableSeconds
+
+ReadableSeconds
+
+Example:
+    
+    print ReadableSeconds(11312314),"\n"; # 130 day 22 hour 18 min 34 sec
+
+=cut
+
+sub ReadableSeconds ($) {
+    my ($seconds) = @_;
+    return "Positive integer need." unless $seconds =~ /^\d+$/;
+
+    my $time            = "";
+    my $has_bigger_unit = 0;
+
+    my $days = $seconds / 86400;
+    if ( $days >= 1 ) {
+        $time .= ( int $days ) . " day ";
+        $has_bigger_unit = 1;
+    }
+    $seconds = $seconds % 86400;
+
+    my $hours = $seconds / 3600;
+    if ( $hours >= 1 ) {
+        $time .= ( int $hours ) . " hour ";
+        $has_bigger_unit = 1;
+    }
+    elsif ($has_bigger_unit) { $time .= 0 . " hour "; }
+    $seconds = $seconds % 3600;
+
+    my $minutes = $seconds / 60;
+    if ( $minutes >= 1 ) {
+        $time .= ( int $minutes ) . " min ";
+        $has_bigger_unit = 1;
+    }
+    elsif ($has_bigger_unit) { $time .= 0 . " min "; }
+    $seconds = $seconds % 60;
+
+    $time .= $seconds . " sec";
+    return $time;
 }
 
 =head2 check_positive_integer
@@ -477,6 +570,7 @@ Example:
     filename_prefix("tmp");     # "tmp"
 
 =cut
+
 sub filename_prefix {
     my ($file) = @_;
     if ( $file =~ /(.+)\..+?$/ ) {
@@ -487,16 +581,16 @@ sub filename_prefix {
     }
 }
 
-
 =head2 check_all_files_exist
 
     Check whether all files existed.
 
 =cut
+
 sub check_all_files_exist {
     my $flag = 1;
     for (@_) {
-        if ( not -e $_) {
+        if ( not -e $_ ) {
             return 0;
         }
     }
@@ -527,7 +621,6 @@ sub check_in_out_dir {
         if $in eq $out;
 }
 
-
 =head2 rm_and_mkdir
 
     Make a directory, remove it firstly if it exists.
@@ -537,7 +630,6 @@ Example:
     rm_and_mkdir("out")
 
 =cut
-
 
 sub rm_and_mkdir {
     my ($dir) = @_;
