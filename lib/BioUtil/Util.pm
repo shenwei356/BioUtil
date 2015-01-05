@@ -31,6 +31,8 @@ require Exporter;
     check_all_files_exist
     check_in_out_dir
     rm_and_mkdir
+
+    run_time
 );
 
 use vars qw($VERSION);
@@ -57,11 +59,11 @@ hoping it would be helpful.
 
 =head1 VERSION
 
-Version 2014.1226
+Version 2015.0105
 
 =cut
 
-our $VERSION = 2014.1226;
+our $VERSION = 2015.0105;
 
 =head1 EXPORT
     getopt
@@ -90,6 +92,8 @@ our $VERSION = 2014.1226;
     check_all_files_exist
     check_in_out_dir 
     rm_and_mkdir
+
+    run_time
 
 =head1 SYNOPSIS
 
@@ -638,5 +642,40 @@ sub rm_and_mkdir {
     }
     mkdir $dir or die "fail to mkdir: $dir\n";
 }
+
+=head2 run_time
+
+Example:
+    
+    my $read_by_record = sub {
+        my ($file) = @_;
+        my $t0 = time;
+
+        my $next_seq = FastaReader($file);
+        while ( my $fa = &$next_seq() ) {
+            my ( $header, $seq ) = @$fa;
+
+            print ">$header\n$seq\n";
+        }
+
+        return time - $t0;
+    };
+
+    run_time( 1, $read_by_record, $file );
+
+=cut
+
+sub run_time {
+    my ( $n, $sub, @args ) = @_;
+    die "first argument should be positive integer"
+        unless $n =~ /^\d+$/ and $n > 0;
+
+    my @ts = ();
+    push @ts, &$sub(@args) for 1 .. $n;
+
+    my ( $mean, $stdev ) = mean_and_stdev( \@ts );
+    printf STDERR "\n## Compute time: %0.03f ± %0.03f s\n\n", $mean, $stdev;
+}
+
 
 1;

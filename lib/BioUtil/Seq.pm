@@ -43,11 +43,11 @@ hoping it would be helpful.
 
 =head1 VERSION
 
-Version 2014.1213
+Version 2015.0105
 
 =cut
 
-our $VERSION = 2014.1213;
+our $VERSION = 2015.0105;
 
 =head1 EXPORT
 
@@ -85,10 +85,14 @@ FastaReader returns an anonymous subroutine, when called, it
 return a fasta record which is reference of an array
 containing fasta header and sequence.
 
-FastaReader could also read from STDIN when the file name is "STDIN".
+FastaReader could also read from STDIN when the file name is "STDIN" or "stdin".
 
-A boolean argument is optional. If set as "true", "return" ("\r") and
-"new line" ("\n") symbols in sequence will not be trimed.
+A boolean argument is optional. If set as "true", spaces including blank, tab, 
+"return" ("\r") and "new line" ("\n") symbols in sequence will not be trimed.
+
+FastaReader speeds up by utilizing the special Perl variable $/ (set to "\n>"),
+with kind help of Mario Roy, author of MCE 
+(https://code.google.com/p/many-core-engine-perl/).
 
 Example:
 
@@ -113,31 +117,73 @@ Example:
 sub FastaReader {
     my ( $file, $not_trim ) = @_;
 
+    my ( $open_flg, $count, $finished ) = (0) x 3;
+    my ( $fh,       $head,  $seq )      = (undef) x 3;
+
+    if ( $file =~ /^STDIN$/i ) {    # from stdin
+        $fh = *STDIN;
+    }
+    elsif ( ref $file eq '' or ref $file eq 'SCALAR' ) {    # from file
+        open $fh, '<', $file or die "fail to open file: $file!\n";
+    }
+    else {    # glob, i.e. given file handler
+        $fh = $file;
+    }
+
+    return sub {
+        return if $finished;
+
+        local $/ = "\n>";    ## set input record separator
+        while (<$fh>) {
+            unless ( $count++ ) {    ## 1st record
+                substr( $_, 0, 1 ) eq '>'    ## must have leading ">"
+                    or next;                 ## otherwise skip record
+                $_ = substr( $_, 1 );        ## trim ">"
+            }
+
+            ## trim trailing ">". faster than s/\r?\n>$//
+            chop if substr( $_, -1, 1 ) eq '>';
+
+            ## extract header and sequence
+            ( $head, $seq ) = split( /\n/, $_, 2 );
+
+            ## trim trailing "\r" in header
+            chop $head if substr( $head, -1, 1 ) eq "\r";
+
+            if ( length $head > 0 ) {
+                $seq =~ s/\s+//g unless $not_trim;
+                return [ $head, $seq ];
+            }
+        }
+
+        close $fh if $open_flg;
+        $finished = 1;
+        return;
+    };
+}
+
+sub FastaReader_old {
+    my ( $file, $not_trim ) = @_;
+
     my ( $last_header, $seq_buffer ) = ( '', '' ); # buffer for header and seq
     my ( $header,      $seq )        = ( '', '' ); # current header and seq
     my $finished = 0;
 
-    my $fh       = undef;
-    my $is_stdin = 0;
-
+    my ( $fh, $is_stdin ) = ( undef, 0 );
     if ( $file =~ /^STDIN$/i ) {
-        $fh       = *STDIN;
-        $is_stdin = 1;
+        ( $fh, $is_stdin ) = ( *STDIN, 1 );
     }
     else {
-        open $fh, "<", $file
-            or die "fail to open file: $file!\n";
+        open $fh, "<", $file or die "fail to open file: $file!\n";
     }
 
     return sub {
-        if ($finished) {    # end of file
-            return undef;
-        }
+        return undef if $finished;    # end of file
 
         while (<$fh>) {
-            s/^\s+//;       # remove the space at the front of line
+            s/^\s+//;    # remove the space at the front of line
 
-            if (/^>(.*)/) { # header line
+            if (/^>(.*)/) {    # header line
                 ( $header, $last_header ) = ( $last_header, $1 );
                 ( $seq,    $seq_buffer )  = ( $seq_buffer,  '' );
 
@@ -154,8 +200,7 @@ sub FastaReader {
         close $fh unless $is_stdin;
         $finished = 1;
 
-        # last record
-        # only output fasta records with non-blank header
+        # last record. only output fasta records with non-blank header
         if ( $last_header ne '' ) {
             $seq_buffer =~ s/\s+//g unless $not_trim;
             return [ $last_header, $seq_buffer ];
