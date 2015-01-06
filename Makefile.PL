@@ -14,9 +14,14 @@ WriteMakefile(
     CONFIGURE_REQUIRES => { 'ExtUtils::MakeMaker' => 0, },
     BUILD_REQUIRES     => { 'Test::More' => 0, },
     PREREQ_PM          => {
+        'JSON'           => 0,
+        'List::Util'     => 0,
+        'Time::HiRes'    => 0,
+        'File::Path'     => 0,
+        'Encode'         => 0,
+        'File::Find'     => 0,
+        'File::Basename' => 0,
 
-        #'ABC'              => 1.6,
-        #'Foo::Bar::Module' => 5.0401,
     },
     dist       => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean      => { FILES    => 'BioUtil-*' },

@@ -1,6 +1,7 @@
 package BioUtil::Util;
 
 use File::Path qw/remove_tree/;
+use Time::HiRes qw/time/;
 
 require Exporter;
 @ISA    = (Exporter);
@@ -23,7 +24,7 @@ require Exporter;
     write_json_file
 
     run
-    ReadableSeconds
+    readable_second
 
     check_positive_integer
 
@@ -84,7 +85,7 @@ our $VERSION = 2015.0105;
     write_json_file
 
     run
-    ReadableSeconds
+    readable_second
 
     check_positive_integer
     
@@ -504,17 +505,17 @@ sub run {
     return $?;
 }
 
-=head2 ReadableSeconds
+=head2 readable_second
 
-ReadableSeconds
+readable_second
 
 Example:
     
-    print ReadableSeconds(11312314),"\n"; # 130 day 22 hour 18 min 34 sec
+    print readable_second(11312314),"\n"; # 130 day 22 hour 18 min 34 sec
 
 =cut
 
-sub ReadableSeconds ($) {
+sub readable_second ($) {
     my ($seconds) = @_;
     return "Positive integer need." unless $seconds =~ /^\d+$/;
 
@@ -554,7 +555,7 @@ Check Positive Integer
 
 Example:
     
-    rcheck_positive_integer(1);
+    check_positive_integer(1);
 
 =cut
 
@@ -564,7 +565,7 @@ sub check_positive_integer {
         unless $n =~ /^\d+$/ and $n != 0;
 }
 
-=head2 check_positive_integer
+=head2 filename_prefix
 
 Get filename prefix
 
@@ -603,7 +604,7 @@ sub check_all_files_exist {
 
 =head2 check_in_out_dir
 
-    Check in and out directory.
+Check in and out directory.
 
 Example:
     
@@ -627,7 +628,7 @@ sub check_in_out_dir {
 
 =head2 rm_and_mkdir
 
-    Make a directory, remove it firstly if it exists.
+Make a directory, remove it firstly if it exists.
 
 Example:
     
@@ -645,23 +646,22 @@ sub rm_and_mkdir {
 
 =head2 run_time
 
+Run a subroutine with given arguments N times, and return the mean and stdev
+of time.
+
 Example:
     
     my $read_by_record = sub {
         my ($file) = @_;
-        my $t0 = time;
-
         my $next_seq = FastaReader($file);
         while ( my $fa = &$next_seq() ) {
             my ( $header, $seq ) = @$fa;
-
-            print ">$header\n$seq\n";
+            # print ">$header\n$seq\n";
         }
-
-        return time - $t0;
     };
-
-    run_time( 1, $read_by_record, $file );
+    
+    my ($mean, $stdev) = run_time( 8, $read_by_record, $file );
+    printf STDERR "\n## Compute time: %0.03f ± %0.03f s\n\n", $mean, $stdev;
 
 =cut
 
@@ -670,11 +670,14 @@ sub run_time {
     die "first argument should be positive integer"
         unless $n =~ /^\d+$/ and $n > 0;
 
-    my @ts = ();
-    push @ts, &$sub(@args) for 1 .. $n;
+    my ( $t0, @ts ) = ( 0, undef );
+    for ( 1 .. $n ) {
+        $t0 = time;
+        &$sub(@args);    # call $sub
+        push @ts, time - $t0;
+    }
 
-    my ( $mean, $stdev ) = mean_and_stdev( \@ts );
-    printf STDERR "\n## Compute time: %0.03f ± %0.03f s\n\n", $mean, $stdev;
+    return mean_and_stdev( \@ts );
 }
 
 

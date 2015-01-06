@@ -125,6 +125,7 @@ sub FastaReader {
     }
     elsif ( ref $file eq '' or ref $file eq 'SCALAR' ) {    # from file
         open $fh, '<', $file or die "fail to open file: $file!\n";
+        $open_flg = 1;
     }
     else {    # glob, i.e. given file handler
         $fh = $file;
@@ -151,7 +152,7 @@ sub FastaReader {
             chop $head if substr( $head, -1, 1 ) eq "\r";
 
             if ( length $head > 0 ) {
-                $seq =~ s/\s+//g unless $not_trim;
+                $seq =~ s/\s//g unless $not_trim;
                 return [ $head, $seq ];
             }
         }
@@ -266,8 +267,7 @@ Format sequence to readable text
 
 Example:
 
-    my $seq = {"seq1" => "acgagaggag"};
-    write_sequence_to_fasta_file($seq, "seq.fa");
+    printf ">%s\n%s", $head, format_seq($seq, 60);
 
 =cut
 
