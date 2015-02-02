@@ -4,23 +4,23 @@ require Exporter;
 @ISA    = (Exporter);
 @EXPORT = qw(
     FastaReader
-    read_sequence_from_fasta_file 
-    write_sequence_to_fasta_file 
+    read_sequence_from_fasta_file
+    write_sequence_to_fasta_file
     format_seq
 
-    validate_sequence 
+    validate_sequence
     complement
     revcom
-    base_content 
+    base_content
     degenerate_seq_to_regexp
     degenerate_seq_match_sites
-    dna2peptide 
-    codon2aa 
+    dna2peptide
+    codon2aa
     generate_random_seqence
 
-    shuffle_sequences 
-    rename_fasta_header 
-    clean_fasta_header 
+    shuffle_sequences
+    rename_fasta_header
+    clean_fasta_header
 );
 
 use vars qw($VERSION);
@@ -43,11 +43,11 @@ hoping it would be helpful.
 
 =head1 VERSION
 
-Version 2015.0105
+Version 2015.0202
 
 =cut
 
-our $VERSION = 2015.0105;
+our $VERSION = 2015.0202;
 
 =head1 EXPORT
 
@@ -92,7 +92,8 @@ A boolean argument is optional. If set as "true", spaces including blank, tab,
 
 FastaReader speeds up by utilizing the special Perl variable $/ (set to "\n>"),
 with kind help of Mario Roy, author of MCE 
-(https://code.google.com/p/many-core-engine-perl/).
+(https://code.google.com/p/many-core-engine-perl/). A lot of optimizations were
+also done by him.
 
 Example:
 
@@ -117,8 +118,8 @@ Example:
 sub FastaReader {
     my ( $file, $not_trim ) = @_;
 
-    my ( $open_flg, $count, $finished ) = (0) x 3;
-    my ( $fh,       $head,  $seq )      = (undef) x 3;
+    my ( $open_flg, $finished ) = ( 0, 0 );
+    my ( $fh, $pos, $head, $seq ) = (undef) x 4;
 
     if ( $file =~ /^STDIN$/i ) {    # from stdin
         $fh = *STDIN;
@@ -131,28 +132,31 @@ sub FastaReader {
         $fh = $file;
     }
 
+    local $/ = \1;     ## read one byte
+    while (<$fh>) {    ## until reaching ">"
+        last if $_ eq '>';
+    }
     return sub {
         return if $finished;
 
         local $/ = "\n>";    ## set input record separator
         while (<$fh>) {
-            unless ( $count++ ) {    ## 1st record
-                substr( $_, 0, 1 ) eq '>'    ## must have leading ">"
-                    or next;                 ## otherwise skip record
-                $_ = substr( $_, 1 );        ## trim ">"
-            }
-
-            ## trim trailing ">". faster than s/\r?\n>$//
-            chop if substr( $_, -1, 1 ) eq '>';
+            ## trim trailing ">", part of $/. faster than s/\r?\n>$//
+            substr($_, -1, 1, '') if substr( $_, -1, 1 ) eq '>';
 
             ## extract header and sequence
-            ( $head, $seq ) = split( /\n/, $_, 2 );
+            # faster than  ( $head, $seq ) = split( /\n/, $_, 2 );
+            $pos = index( $_, "\n" ) + 1;
+            $head = substr( $_, 0, $pos - 1 );
+            $seq = substr( $_, $pos );
 
             ## trim trailing "\r" in header
             chop $head if substr( $head, -1, 1 ) eq "\r";
 
             if ( length $head > 0 ) {
-                $seq =~ s/\s//g unless $not_trim;
+
+                # faster than $seq =~ s/\s//g unless $not_trim;
+                $seq =~ tr/\t\r\n //d unless $not_trim;
                 return [ $head, $seq ];
             }
         }
@@ -179,7 +183,7 @@ sub FastaReader_old {
     }
 
     return sub {
-        return undef if $finished;    # end of file
+        return undef if $finished;                 # end of file
 
         while (<$fh>) {
             s/^\s+//;    # remove the space at the front of line
@@ -254,11 +258,11 @@ sub write_sequence_to_fasta_file {
     }
     $n = 70 unless defined $n;
 
-    open OUT, ">$file" or die "failed to write to $file\n";
+    open my $fh2, ">$file" or die "failed to write to $file\n";
     for ( keys %$seqs ) {
-        print OUT ">$_\n", format_seq( $$seqs{$_}, $n ), "\n";
+        print $fh2 ">$_\n", format_seq( $$seqs{$_}, $n ), "\n";
     }
-    close OUT;
+    close $fh2;
 }
 
 =head2 format_seq
@@ -349,10 +353,10 @@ my $comp = complement($seq);
 
 sub complement {
     my ($s) = @_;
-    $s =~ tr/ACGTURYMKSWBDHVNacgturymkswbdhvn/TGCAAYRKMSWVHDBNtgcaayrkmswvhdbn/;
+    $s
+        =~ tr/ACGTURYMKSWBDHVNacgturymkswbdhvn/TGCAAYRKMSWVHDBNtgcaayrkmswvhdbn/;
     return $s;
 }
-
 
 =head2 revcom
 
@@ -363,7 +367,7 @@ my $recom = revcom($seq);
 =cut
 
 sub revcom {
-    return reverse complement($_[0]);
+    return reverse complement( $_[0] );
 }
 
 =head2 base_content
@@ -390,6 +394,7 @@ sub base_content {
 Translate degenerate sequence to regular expression
 
 =cut
+
 sub degenerate_seq_to_regexp {
     my ($seq) = @_;
     my %bases = (
@@ -410,7 +415,7 @@ sub degenerate_seq_to_regexp {
         'D' => '[AGT]',
         'N' => '[ACGT]',
     );
-    return join '', map { $bases{$_} } split // , $seq;
+    return join '', map { $bases{$_} } split //, $seq;
 }
 
 =head2 degenerate_seq_match_sites
@@ -418,6 +423,7 @@ sub degenerate_seq_to_regexp {
 Find all sites matching degenerat subseq
 
 =cut
+
 sub degenerate_seq_match_sites {
     my ( $r, $s ) = @_;
 
@@ -574,9 +580,9 @@ sub shuffle_sequences {
     my @keys = shuffle( keys %$seqs );
 
     $file_out = "$file.shuffled.fa" unless defined $file_out;
-    open OUT, ">$file_out" or die "fail to write file $file_out\n";
-    print OUT ">$_\n$$seqs{$_}\n" for @keys;
-    close OUT;
+    open my $fh2, ">$file_out" or die "fail to write file $file_out\n";
+    print $fh2 ">$_\n$$seqs{$_}\n" for @keys;
+    close $fh2;
 
     return $file_out;
 }
@@ -596,26 +602,26 @@ Example:
 sub rename_fasta_header {
     my ( $regex, $repalcement, $file, $outfile ) = @_;
 
-    open IN,  "<", $file    or die "fail to open file: $file\n";
-    open OUT, ">", $outfile or die "fail to wirte file: $outfile\n";
+    open my $fh,  "<", $file    or die "fail to open file: $file\n";
+    open my $fh2, ">", $outfile or die "fail to wirte file: $outfile\n";
 
     my $head = '';
     my $n    = 0;
-    while (<IN>) {
+    while (<$fh>) {
         if (/^\s*>(.*)\r?\n/) {
             $head = $1;
             if ( $head =~ /$regex/ ) {
                 $head =~ s/$regex/$repalcement/g;
                 $n++;
             }
-            print OUT ">$head\n";
+            print $fh2 ">$head\n";
         }
         else {
-            print OUT $_;
+            print $fh2 $_;
         }
     }
-    close IN;
-    close OUT;
+    close $fh;
+    close $fh2;
 
     return $n;
 }
@@ -646,26 +652,26 @@ sub clean_fasta_header {
         return 0;
     }
     my $re = join '', map { quotemeta $_ } @$symbols;
-    open IN,  "<", $file    or die "fail to open file: $file\n";
-    open OUT, ">", $outfile or die "fail to wirte file: $outfile\n";
+    open my $fh,  "<", $file    or die "fail to open file: $file\n";
+    open my $fh2, ">", $outfile or die "fail to wirte file: $outfile\n";
 
     my $head = '';
     my $n    = 0;
-    while (<IN>) {
+    while (<$fh>) {
         if (/^\s*>(.*)\r?\n/) {
             $head = $1;
             if ( $head =~ /[$re]/ ) {
                 $head =~ s/[$re]/$replacement/g;
                 $n++;
             }
-            print OUT ">$head\n";
+            print $fh2 ">$head\n";
         }
         else {
-            print OUT $_;
+            print $fh2 $_;
         }
     }
-    close IN;
-    close OUT;
+    close $fh;
+    close $fh2;
 
     return $n;
 }

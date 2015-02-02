@@ -24,16 +24,17 @@ require Exporter;
     write_json_file
 
     run
+    run_time
     readable_second
 
     check_positive_integer
+    mean_and_stdev
 
     filename_prefix
     check_all_files_exist
     check_in_out_dir
     rm_and_mkdir
 
-    run_time
 );
 
 use vars qw($VERSION);
@@ -85,16 +86,17 @@ our $VERSION = 2015.0105;
     write_json_file
 
     run
+    run_time
     readable_second
 
     check_positive_integer
+    mean_and_stdev
     
     filename_prefix
     check_all_files_exist
     check_in_out_dir 
     rm_and_mkdir
 
-    run_time
 
 =head1 SYNOPSIS
 
@@ -332,8 +334,8 @@ output is:
 sub get_parameters_from_file {
     my ($file) = @_;
     my $parameters = {};
-    open IN, $file or die "fail to open file $file\n";
-    while (<IN>) {
+    open my $fh, $file or die "fail to open file $file\n";
+    while (<$fh>) {
         s/^\s+|\s+$//g;
         next if $_ eq ''    # blank line
             or /^#/;        # annotation
@@ -342,7 +344,7 @@ sub get_parameters_from_file {
         next unless /([\w\d\_\-\.]+)\s*=\s*(.+)/;
         $$parameters{$1} = $2;
     }
-    close IN;
+    close $fh;
     return $parameters;
 }
 
@@ -372,9 +374,9 @@ output is:
 
 sub get_list_from_file {
     my ($file) = @_;
-    open IN, "<", $file or die "fail to open file $file\n";
+    open my $fh, "<", $file or die "fail to open file $file\n";
     my @list = ();
-    while (<IN>) {
+    while (<$fh>) {
         s/\r?\n//g;
         s/^\s+|\s+$//g;
         next if $_ eq ''    # blank line
@@ -383,7 +385,7 @@ sub get_list_from_file {
 
         push @list, $_;
     }
-    close IN;
+    close $fh;
     return \@list;
 }
 
@@ -406,11 +408,11 @@ sub get_column_data {
     }
     $delimiter = "\t" unless defined $delimiter;
 
-    open IN, "<", $file or die "failed to open file: $file\n";
+    open my $fh, "<", $file or die "failed to open file: $file\n";
     my @linedata = ();
     my @data     = ();
     my $n        = 0;
-    while (<IN>) {
+    while (<$fh>) {
         s/\r?\n//;
         next if /^\s*#/;
         @linedata = split /$delimiter/, $_;
@@ -424,7 +426,7 @@ sub get_column_data {
 
         push @data, $linedata[ $column - 1 ];
     }
-    close IN;
+    close $fh;
 
     return \@data;
 }
@@ -441,14 +443,14 @@ Example:
 
 sub read_json_file {
     my ($file) = @_;
-    open IN, "<:encoding(utf8)", $file
+    open my $fh, "<:encoding(utf8)", $file
         or die "fail to open json file: $file\n";
     my $text;
-    while (<IN>) {
+    while (<$fh>) {
         s/\s*#+.*\r?\n?//g;    # remove annotation
         $text .= $1 if / *(.+)/;
     }
-    close IN;
+    close $fh;
     my $hash = decode_json($text);
     return $hash;
 }
@@ -469,10 +471,10 @@ sub write_json_file {
     my $json = JSON->new->allow_nonref;
     my $text = $json->pretty->encode($hash);
     $text = encode_utf8($text);
-    open OUT, ">:encoding(utf8)", $file
+    open my $fh2, ">:encoding(utf8)", $file
         or die "fail to open json file: $file\n";
-    print OUT $text;
-    close OUT;
+    print $fh2 $text;
+    close $fh2;
 }
 
 =head2 run
@@ -503,6 +505,43 @@ sub run {
         # 0, ok
     }
     return $?;
+}
+
+=head2 run_time
+
+Run a subroutine with given arguments N times, and return the mean and stdev
+of time.
+
+Example:
+    
+    my $read_by_record = sub {
+        my ($file) = @_;
+        my $next_seq = FastaReader($file);
+        while ( my $fa = &$next_seq() ) {
+            my ( $header, $seq ) = @$fa;
+            # print ">$header\n$seq\n";
+        }
+    };
+    
+    my ($mean, $stdev) = run_time( 8, $read_by_record, $file );
+    printf STDERR "\n## Compute time: %0.03f ± %0.03f s\n\n", $mean, $stdev;
+
+=cut
+
+sub run_time {
+    my ( $n, $sub, @args ) = @_;
+    die "first argument should be positive integer"
+        unless $n =~ /^\d+$/ and $n > 0;
+
+    my $t0 = 0;
+    my @ts = ();
+    for ( 1 .. $n ) {
+        $t0 = time;
+        &$sub(@args);    # call $sub
+        push @ts, time - $t0;
+    }
+
+    return mean_and_stdev( \@ts );
 }
 
 =head2 readable_second
@@ -565,6 +604,28 @@ sub check_positive_integer {
         unless $n =~ /^\d+$/ and $n != 0;
 }
 
+=head2 mean_and_stdev
+
+return mean and stdev of a list
+
+Example:
+    my @list = qq/1 2 3/;
+    mean_and_stdev(\@list);
+
+=cut
+sub mean_and_stdev($) {
+    my ($list) = @_;
+    return ( 0, 0 ) if @$list == 0;
+    my $sum = 0;
+    $sum += $_ for @$list;
+    my $sum_square = 0;
+    $sum_square += $_ * $_ for @$list;
+    my $mean     = $sum / @$list;
+    my $variance = $sum_square / @$list - $mean * $mean;
+    my $std      = sqrt $variance;
+    return ( $mean, $std );
+}
+
 =head2 filename_prefix
 
 Get filename prefix
@@ -604,7 +665,7 @@ sub check_all_files_exist {
 
 =head2 check_in_out_dir
 
-Check in and out directory.
+Check in and $fh2 directory.
 
 Example:
     
@@ -644,41 +705,7 @@ sub rm_and_mkdir {
     mkdir $dir or die "fail to mkdir: $dir\n";
 }
 
-=head2 run_time
 
-Run a subroutine with given arguments N times, and return the mean and stdev
-of time.
-
-Example:
-    
-    my $read_by_record = sub {
-        my ($file) = @_;
-        my $next_seq = FastaReader($file);
-        while ( my $fa = &$next_seq() ) {
-            my ( $header, $seq ) = @$fa;
-            # print ">$header\n$seq\n";
-        }
-    };
-    
-    my ($mean, $stdev) = run_time( 8, $read_by_record, $file );
-    printf STDERR "\n## Compute time: %0.03f ± %0.03f s\n\n", $mean, $stdev;
-
-=cut
-
-sub run_time {
-    my ( $n, $sub, @args ) = @_;
-    die "first argument should be positive integer"
-        unless $n =~ /^\d+$/ and $n > 0;
-
-    my ( $t0, @ts ) = ( 0, undef );
-    for ( 1 .. $n ) {
-        $t0 = time;
-        &$sub(@args);    # call $sub
-        push @ts, time - $t0;
-    }
-
-    return mean_and_stdev( \@ts );
-}
 
 
 1;

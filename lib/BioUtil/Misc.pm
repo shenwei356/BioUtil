@@ -16,7 +16,7 @@ use warnings FATAL => 'all';
 
 =head1 NAME
 
-BioUtil::Misc - 
+BioUtil::Misc - Miscellaneous functions
 
 =head1 VERSION
 
@@ -61,8 +61,8 @@ Example
 sub parse_embossre {
     my ($file) = @_;
     my ( $enzs, $enz ) = ( {}, '' );
-    open IN, $file or die "fail to open enzyme file $file!\n";
-    while (<IN>) {
+    open my $fh, $file or die "fail to open enzyme file $file!\n";
+    while (<$fh>) {
         next if /^#/;    # annotation
         next unless /(\w+)       # name
                     \t(\w+)     # pattern
@@ -88,7 +88,7 @@ sub parse_embossre {
         $$enzs{$enz}{c3}          = $8;
         $$enzs{$enz}{c4}          = $9;
     }
-    close IN;
+    close $fh;
     return $enzs;
 }
 
