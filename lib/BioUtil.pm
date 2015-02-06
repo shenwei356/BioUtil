@@ -18,11 +18,11 @@ Please check the submodules.
 
 =head1 VERSION
 
-Version 2015.0202
+Version 2015.0206
 
 =cut
 
-our $VERSION = 2015.0202;
+our $VERSION = 2015.0206;
 
 
 =head1 AUTHOR

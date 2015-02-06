@@ -43,11 +43,11 @@ hoping it would be helpful.
 
 =head1 VERSION
 
-Version 2015.0202
+Version 2015.0206
 
 =cut
 
-our $VERSION = 2015.0202;
+our $VERSION = 2015.0206;
 
 =head1 EXPORT
 
@@ -119,7 +119,7 @@ sub FastaReader {
     my ( $file, $not_trim ) = @_;
 
     my ( $open_flg, $finished ) = ( 0, 0 );
-    my ( $fh, $pos, $head, $seq ) = (undef) x 4;
+    my ( $fh, $pos, $head ) = (undef) x 3;
 
     if ( $file =~ /^STDIN$/i ) {    # from stdin
         $fh = *STDIN;
@@ -142,13 +142,16 @@ sub FastaReader {
         local $/ = "\n>";    ## set input record separator
         while (<$fh>) {
             ## trim trailing ">", part of $/. faster than s/\r?\n>$//
-            substr($_, -1, 1, '') if substr( $_, -1, 1 ) eq '>';
+            substr( $_, -1, 1, '' ) if substr( $_, -1, 1 ) eq '>';
 
             ## extract header and sequence
             # faster than  ( $head, $seq ) = split( /\n/, $_, 2 );
             $pos = index( $_, "\n" ) + 1;
             $head = substr( $_, 0, $pos - 1 );
-            $seq = substr( $_, $pos );
+
+            # $_ becomes sequence, to save memery
+            # $seq = substr( $_, $pos );
+            substr( $_, 0, $pos, '' );
 
             ## trim trailing "\r" in header
             chop $head if substr( $head, -1, 1 ) eq "\r";
@@ -156,8 +159,9 @@ sub FastaReader {
             if ( length $head > 0 ) {
 
                 # faster than $seq =~ s/\s//g unless $not_trim;
-                $seq =~ tr/\t\r\n //d unless $not_trim;
-                return [ $head, $seq ];
+                # $seq =~ tr/\t\r\n //d unless $not_trim;
+                $_ =~ tr/\t\r\n //d unless $not_trim;
+                return [ $head, $_ ];
             }
         }
 
