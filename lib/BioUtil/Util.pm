@@ -35,6 +35,8 @@ require Exporter;
     check_in_out_dir
     rm_and_mkdir
 
+    get_paired_fq_gz_file_from_dir
+
 );
 
 use vars qw($VERSION);
@@ -61,11 +63,11 @@ hoping it would be helpful.
 
 =head1 VERSION
 
-Version 2015.0105
+Version 2015.0228
 
 =cut
 
-our $VERSION = 2015.0105;
+our $VERSION = 2015.0228;
 
 =head1 EXPORT
     getopt
@@ -97,6 +99,7 @@ our $VERSION = 2015.0105;
     check_in_out_dir 
     rm_and_mkdir
 
+    get_paired_fq_gz_file_from_dir
 
 =head1 SYNOPSIS
 
@@ -705,7 +708,30 @@ sub rm_and_mkdir {
     mkdir $dir or die "fail to mkdir: $dir\n";
 }
 
+=head2 get_paired_fq_gz_file_from_dir
 
+Example:
 
+    # .
+    # ├── test_1.fq.gz
+    # └── test_2.fq.gz
+    for my $pe ( get_paired_fq_gz_file_from_dir($indir) ) {
+        # test_1.fq.gz, test_1.fq.gz, test
+        my ( $fqfile1, $fqfile2, $id ) = @$pe;
 
+    }
+
+=cut
+
+sub get_paired_fq_gz_file_from_dir {
+    my ($dir) = @_;
+    my @files;
+    for ( sort glob "$dir/*_1.fq.gz" ) {
+        /\/?([^\/]+)_1.fq.gz/;
+        my $id = $1;
+        next unless -e "$dir/${id}_2.fq.gz";
+        push @files, [ "$dir/${id}_1.fq.gz", "$dir/${id}_2.fq.gz", "$dir/${id}", $id ];
+    }
+    return @files;
+}
 1;

@@ -149,7 +149,7 @@ sub FastaReader {
             $pos = index( $_, "\n" ) + 1;
             $head = substr( $_, 0, $pos - 1 );
 
-            # $_ becomes sequence, to save memery
+            # $_ becomes sequence, to save memory
             # $seq = substr( $_, $pos );
             substr( $_, 0, $pos, '' );
 
@@ -237,9 +237,9 @@ sub read_sequence_from_fasta_file {
 
     my $next_seq = FastaReader( $file, $not_trim );
     while ( my $fa = &$next_seq() ) {
-        my ( $header, $seq ) = @$fa;
-
-        $$seqs{$header} = $seq;
+        # my ( $header, $seq ) = @$fa;
+        # $$seqs{$header} = $seq;
+        $$seqs{ $fa->[0] } = $fa->[1];
     }
 
     return $seqs;
