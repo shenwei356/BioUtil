@@ -43,11 +43,11 @@ hoping it would be helpful.
 
 =head1 VERSION
 
-Version 2015.0206
+Version 2015.0309
 
 =cut
 
-our $VERSION = 2015.0206;
+our $VERSION = 2015.0309;
 
 =head1 EXPORT
 
@@ -438,10 +438,10 @@ sub degenerate_seq_match_sites {
 
     my @sites = ();
     my $pos   = -1;
-    while ( $s =~ /$r/ig ) {
+    while ( $s =~ /($r)/ig ) {
         $pos = pos $s;
-        push @sites, [ $pos - $len, $pos - 1 ];
-        pos $s = $pos + 1;
+        push @sites, [ $pos - $len + 1, $pos, $1];
+        pos $s = $pos - $len + 1;
     }
     return \@sites;
 }
