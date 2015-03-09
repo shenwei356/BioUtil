@@ -371,7 +371,8 @@ my $recom = revcom($seq);
 =cut
 
 sub revcom {
-    return reverse complement( $_[0] );
+    my $rc = reverse complement( $_[0] );
+    return $rc;
 }
 
 =head2 base_content
@@ -424,7 +425,9 @@ sub degenerate_seq_to_regexp {
 
 =head2 degenerate_seq_match_sites
 
-Find all sites matching degenerat subseq
+Find all sites matching degenerat subseq.
+
+See https://github.com/shenwei356/bio_scripts/blob/master/sequence/fasta_locate_motif.pl
 
 =cut
 
