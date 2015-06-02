@@ -36,6 +36,7 @@ require Exporter;
     rm_and_mkdir
 
     get_paired_fq_gz_file_from_dir
+    get_paired_fa_gz_file_from_dir
 
 );
 
@@ -100,6 +101,7 @@ our $VERSION = 2015.0228;
     rm_and_mkdir
 
     get_paired_fq_gz_file_from_dir
+    get_paired_fa_gz_file_from_dir
 
 =head1 SYNOPSIS
 
@@ -734,4 +736,17 @@ sub get_paired_fq_gz_file_from_dir {
     }
     return @files;
 }
+
+sub get_paired_fa_gz_file_from_dir {
+    my ($dir) = @_;
+    my @files;
+    for ( sort glob "$dir/*_1.fa.gz" ) {
+        /\/?([^\/]+)_1.fa.gz/;
+        my $id = $1;
+        next unless -e "$dir/${id}_2.fa.gz";
+        push @files, [ "$dir/${id}_1.fa.gz", "$dir/${id}_2.fa.gz", "$dir/${id}", $id ];
+    }
+    return @files;
+}
+
 1;

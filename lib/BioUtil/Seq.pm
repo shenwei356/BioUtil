@@ -237,6 +237,7 @@ sub read_sequence_from_fasta_file {
 
     my $next_seq = FastaReader( $file, $not_trim );
     while ( my $fa = &$next_seq() ) {
+
         # my ( $header, $seq ) = @$fa;
         # $$seqs{$header} = $seq;
         $$seqs{ $fa->[0] } = $fa->[1];
@@ -420,7 +421,8 @@ sub degenerate_seq_to_regexp {
         'D' => '[AGT]',
         'N' => '[ACGT]',
     );
-    return join '', map { $bases{$_} } split //, $seq;
+    return join '', map { exists $bases{$_} ? $bases{$_} : $_ }
+        split //, uc $seq;
 }
 
 =head2 degenerate_seq_match_sites
@@ -443,7 +445,7 @@ sub degenerate_seq_match_sites {
     my $pos   = -1;
     while ( $s =~ /($r)/ig ) {
         $pos = pos $s;
-        push @sites, [ $pos - $len + 1, $pos, $1];
+        push @sites, [ $pos - $len + 1, $pos, $1 ];
         pos $s = $pos - $len + 1;
     }
     return \@sites;
