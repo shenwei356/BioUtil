@@ -13,7 +13,7 @@ require Exporter;
     revcom
     base_content
     degenerate_seq_to_regexp
-    degenerate_seq_match_sites
+    match_regexp
     dna2peptide
     codon2aa
     generate_random_seqence
@@ -47,7 +47,7 @@ Version 2015.0309
 
 =cut
 
-our $VERSION = 2015.0309;
+our $VERSION = 2015.0728;
 
 =head1 EXPORT
 
@@ -61,7 +61,7 @@ our $VERSION = 2015.0309;
     revcom 
     base_content 
     degenerate_seq_to_regexp
-    degenerate_seq_match_sites
+    match_regexp
     dna2peptide 
     codon2aa 
     generate_random_seqence
@@ -425,30 +425,27 @@ sub degenerate_seq_to_regexp {
         split //, uc $seq;
 }
 
-=head2 degenerate_seq_match_sites
+=head2 match_regexp
 
-Find all sites matching degenerat subseq.
+Find all sites matching the regular expression.
 
 See https://github.com/shenwei356/bio_scripts/blob/master/sequence/fasta_locate_motif.pl
 
 =cut
 
-sub degenerate_seq_match_sites {
+sub match_regexp {
     my ( $r, $s ) = @_;
-
-    # original regexp length
-    my $r2 = $r;
-    $r2 =~ s/\[[^\[\]]+?\]/_/g;
-    my $len = length $r2;
-
-    my @sites = ();
-    my $pos   = -1;
+    my @matched = ();
+    my $pos     = -1;
     while ( $s =~ /($r)/ig ) {
         $pos = pos $s;
-        push @sites, [ $pos - $len + 1, $pos, $1 ];
-        pos $s = $pos - $len + 1;
+
+        # return start, end, matched string
+        # start and end are 0-based
+        push @matched, [ $pos - length($1), $pos - 1, $1 ];
+        pos $s = $pos - length($1) + 1;
     }
-    return \@sites;
+    return \@matched;
 }
 
 =head2 dna2peptide
